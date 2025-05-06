@@ -1,0 +1,1847 @@
+Анализ кода на соответствие принципам SOLID
+Давайте разберём этот код по принципам SOLID:
+
+1. Принцип единственной ответственности (SRP) ✅
+Класс выполняет только одну задачу: вычисление абсолютного значения числа.
+
+Он не занимается другими математическими операциями или посторонней логикой.
+
+2. Принцип открытости/закрытости (OCP) ✅
+Класс можно расширять (через наследование), не изменяя существующий код.
+
+Для добавления поддержки новых типов чисел не нужно менять текущую реализацию.
+
+3. Принцип подстановки Барбары Лисков (LSP) ✅
+Класс корректно наследует BaseUnaryMathCommand и не нарушает его поведение.
+
+Может использоваться везде, где ожидается базовый класс.
+
+4. Принцип разделения интерфейсов (ISP) ✅
+Класс не реализует лишних интерфейсов.
+
+Использует только необходимые методы родительского класса.
+
+5. Принцип инверсии зависимостей (DIP) ✅
+Класс зависит от абстракции (базового класса команд), а не от конкретных реализаций.
+
+Математические операции делегированы стандартным библиотечным методам.
+
+Дополнительные замечания:
+Хорошие практики:
+Правильное использование пространства имён
+
+Чёткая документация с примерами
+
+Проверка на null для входных данных
+
+Поддержка нескольких числовых типов
+
+Корректная обработка ошибок
+
+Возможные улучшения:
+Можно добавить поддержку большего количества числовых типов
+
+Ошибки можно детализировать (какое именно значение null)
+
+Можно вынести вычисления в отдельный метод для удобства тестирования
+
+Пример улучшенной версии:
+csharp
+public override void OnEnter()
+{
+    if (InValue == null)
+    {
+        Debug.LogError("Входное значение не задано в команде Abs");
+        return;
+    }
+
+    if (OutValue == null)
+    {
+        Debug.LogError("Выходное значение не задано в команде Abs");
+        return;
+    }
+
+    OutValue.Value = ВычислитьАбсолютноеЗначение(InValue.Value);
+    Continue();
+}
+
+private object ВычислитьАбсолютноеЗначение(object значение)
+{
+    return значение switch
+    {
+        int целое => Math.Abs(целое),
+        float дробное => Mathf.Abs(дробное),
+        _ => throw new NotSupportedException($"Тип {значение.GetType()} не поддерживается")
+    };
+}
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+Анализ кода AudioSourceProperty на соответствие принципам SOLID
+1. Принцип единственной ответственности (SRP) ⚠️
+Класс занимается и получением, и установкой множества свойств AudioSource
+
+Нарушение: класс должен отвечать только за одно направление (либо get, либо set) или за одно свойство
+
+2. Принцип открытости/закрытости (OCP) ⚠️
+Добавление нового свойства требует модификации существующего кода
+
+Нарушение: лучше использовать стратегию или фабрику для обработки свойств
+
+3. Принцип подстановки Лисков (LSP) ✅
+Корректно наследует BaseVariableProperty
+
+Не нарушает контракт родительского класса
+
+4. Принцип разделения интерфейсов (ISP) ⚠️
+Класс зависит от всех типов переменных (Float, Integer, Boolean)
+
+Нарушение: клиенты вынуждены зависеть от ненужных им методов
+
+5. Принцип инверсии зависимостей (DIP) ⚠️
+Прямая зависимость от конкретных реализаций AudioSource
+
+Нарушение: лучше зависеть от абстракции (интерфейса IAudioSource)
+
+Конкретные проблемы:
+Длинный метод OnEnter с вложенными switch-ами
+
+Проверки типов в runtime вместо generic-подхода
+
+Отсутствие разделения на читающие и изменяющие операции
+
+Рекомендации по улучшению:
+1. Разделить на два класса:
+csharp
+public class GetAudioSourceProperty : BaseCommand { /* Только get операции */ }
+public class SetAudioSourceProperty : BaseCommand { /* Только set операции */ }
+2. Использовать паттерн стратегия:
+csharp
+public interface IAudioPropertyHandler 
+{
+    bool CanHandle(Property property);
+    void HandleGet(AudioSource source, Variable output);
+    void HandleSet(AudioSource source, Variable input);
+}
+
+// Реализации для каждого свойства
+public class VolumePropertyHandler : IAudioPropertyHandler { ... }
+3. Применить generic:
+csharp
+public abstract class AudioSourceProperty<T> : BaseVariableProperty 
+    where T : Variable
+{
+    protected abstract void ApplyProperty(AudioSource source, T value);
+    protected abstract void ExtractProperty(AudioSource source, T value);
+}
+4. Улучшенная обработка ошибок:
+csharp
+if (!TryValidateInputs(out var errorMessage))
+{
+    Debug.LogError(errorMessage);
+    Continue();
+    return;
+}
+5. Избегать вложенных switch:
+Можно заменить на словарь стратегий:
+
+csharp
+private static readonly Dictionary<Property, IAudioPropertyHandler> _handlers = 
+    new Dictionary<Property, IAudioPropertyHandler>
+    {
+        { Property.Volume, new VolumePropertyHandler() },
+        // ...
+    };
+Вывод: код требует рефакторинга для лучшего соответствия SOLID, особенно по части разделения ответственностей и уменьшения сложности метода OnEnter.
+
+
