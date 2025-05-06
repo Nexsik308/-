@@ -123,3 +123,4 @@ namespace Fungus
 
     }
 }
+![.NET Tests](https://github.com/Nexsik308/-/actions/workflows/dotnet-test.yml/badge.svg)
