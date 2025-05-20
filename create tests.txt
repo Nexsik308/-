@@ -1,0 +1,23 @@
+Создание тестов
+[TestClass]
+public class TestName
+{
+    [TestMethod]
+    public void Test1Name()
+    {
+        // Тест 1
+    }
+
+    [TestMethod]
+    public void Test2Name()
+    {
+        // Тест 2
+    }
+
+    [TestMethod]
+    public void Test3Name()
+    {
+        // Тест 3
+    }
+}
+Шаблом модульного теста
